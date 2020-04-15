@@ -1,0 +1,131 @@
+function [bestcost,loc]=tabusearch(rf,rin,saving,dis,r,M,loc,nl,I,d,demand,limit,capacity,num_m) 
+tic; 
+m=size(M,1); 
+srf=size(rf,1); 
+rfnow=rf; 
+bestcost=inf; 
+scost=inf; 
+tlist=zeros(m); 
+totalcost=inf; 
+Stopl=2*m; 
+loc=I([1:nl])+1; 
+nums=1; 
+monitor=inf; 
+nmoni=0; 
+while(nl<m) 
+     monitor=bestcost;
+s=zeros(1,nl); 
+s([1:nl])=I([1:nl])+1; 
+p=0; 
+n1=nl*(m-nl); 
+si=zeros(n1,nl); 
+  r=ones(srf,15); 
+             rf=ones(srf,15); 
+             rin=ones(srf,15); 
+             [saving rf numrin s]= initial(nl,rf,rin,saving,dis,r,I,d,s); 
+             if numrin==0 
+                 rf=Gmcws(rf,demand,dis,saving,capacity,num_m,limit,d,s); 
+                  cost=totaldis( rf ,dis)+nl*50;   
+             else 
+                 cost=inf; 
+             end 
+             if cost<bestcost 
+                      bestcost=cost; 
+                      loc=s; 
+             end   
+             arrs(nums)=cost; 
+                    arrbest(nums)=bestcost; 
+                    nums=nums+1; 
+   
+            while(p<Stopl) 
+                si=zeros(n1,nl); 
+                for j=1:n1 
+     si(j,:)=s; 
+end 
+unloc=I+1; 
+for i=1:nl 
+     unloc(find(unloc==s(i)))=[]; 
+end 
+                 k=1; 
+            for i=1:nl 
+               for j=1:(m-nl) 
+                   si(k,i)=unloc(j); 
+                   k=k+1; 
+               end 
+            end 
+            CL=inf*ones(n1,4);   
+            for i=1:n1 
+                CL(i,1)=i; 
+            end 
+            k=1; 
+            for i=1:nl 
+               for j=1:(m-nl) 
+                   CL(k,3)=max(s(i),unloc(j)); 
+                   CL(k,4)=min(s(i),unloc(j)); 
+                   k=k+1; 
+               end 
+            end 
+         for i=1:n1       
+             r=ones(srf,15); 
+             rf=ones(srf,15); 
+             rin=ones(srf,15); 
+             [saving rf numrin si(i,:)]= initial(nl,rf,rin,saving,dis,r,I,d,si(i,:)); 
+             if numrin==0 
+                 rf=Gmcws(rf,demand,dis,saving,capacity,num_m,limit,d,si(i,:)); 
+                 cost=totaldis( rf ,dis)+nl*50; 
+                CL(i,2)=cost; 
+             end 
+         end 
+         CL=sortrows(CL,2); 
+         if CL(1,2)<bestcost     
+             s=si(CL(1,1),:); 
+             loc=s; 
+             bestcost=CL(1,2); 
+             arrbest(nums)=bestcost; 
+             arrs(nums)=CL(1,2); 
+             nums=nums+1; 
+             for i=1:m 
+                 for j=1:m 
+                     if tlist(i,j)~=0 
+                         tlist(i,j)=tlist(i,j)-1; 
+                     end 
+                 end 
+             end 
+             tlist(CL(1,3)-1,CL(1,4)-1)=5 
+         else 
+             for K=1:n1
+                 if tlist(CL(K,3)-1,CL(K,4)-1)==0 
+                    s=si(CL(K,1),:); 
+                    arrs(nums)=CL(K,2); 
+                    arrbest(nums)=bestcost; 
+                    nums=nums+1; 
+                     for i=1:m 
+                         for j=1:m 
+                             if tlist(i,j)~=0 
+                                tlist(i,j)=tlist(i,j)-1; 
+                             end 
+                         end 
+                      end 
+               tlist(CL(K,3)-1,CL(K,4)-1)=5; 
+               break; 
+                 end 
+             end 
+         end 
+         p=p+1; 
+            end 
+            nl=nl+1; 
+            if bestcost<monitor 
+                nmoni=0; 
+            else 
+                nmoni=nmoni+1; 
+            end 
+            if nmoni>=3 
+                break; 
+            end 
+                 
+end 
+           toc; 
+           figure(2); 
+           plot(arrbest,'r'); hold on; 
+           plot(arrs,'b'); 
+
